@@ -11,8 +11,8 @@
 
     <div class="cover-screen" id="cover-page">
         <div class="cover-card">
-            <h2>Hey!👋</h2>
-            <p> The memory book</p>
+            <h2>Hey! 👋</h2>
+            <p>Our Little Memory Book!</p>
             <button class="open-btn" id="open-book-btn">Open 💖</button>
         </div>
     </div>
@@ -33,8 +33,8 @@
     </div>
 
     <header>
-        <h1>You Asked Why....!</h1>
-        <p class="subtitle">Here's The Answer ✨</p>
+        <h1>Let's Save our Journey Here!</h1>
+        <p class="subtitle">✨</p>
     </header>
 
     <div style="text-align: center; margin: -20px 0 40px 0; position: relative; z-index: 10;">
@@ -54,13 +54,13 @@
                 </div>
 
                 <div id="file-input-wrapper">
-                    <label style="display: block; font-size: 0.9rem; color: #8e7f7f; margin-bottom: 5px;">Choose photo from storage</label>
-                    <input type="file" id="modal-img-file" accept="image/*" style="width: 100%; border: 1px dashed #ffb6c1; padding: 12px; border-radius: 12px; font-family: 'Fredoka', sans-serif; font-size: 0.9rem; color: #564a4a; background: #fffdfb; cursor: pointer;">
+                    <label style="display: block; font-size: 0.9rem; color: #8e7f7f; margin-bottom: 5px;">Choose photo or video from storage</label>
+                    <input type="file" id="modal-img-file" accept="image/*,video/*" style="width: 100%; border: 1px dashed #ffb6c1; padding: 12px; border-radius: 12px; font-family: 'Fredoka', sans-serif; font-size: 0.9rem; color: #564a4a; background: #fffdfb; cursor: pointer;">
                 </div>
 
                 <div id="url-input-wrapper" style="display: none;">
-                    <label style="display: block; font-size: 0.9rem; color: #8e7f7f; margin-bottom: 5px;">Image URL from the Web</label>
-                    <input type="url" id="modal-img-url" placeholder="https://example.com/photo.jpg" style="width: 100%; border: 1px solid #f0e7e7; padding: 10px 14px; border-radius: 12px; font-family: 'Fredoka', sans-serif; font-size: 0.95rem; color: #564a4a; outline: none; background: #faf8f5;">
+                    <label style="display: block; font-size: 0.9rem; color: #8e7f7f; margin-bottom: 5px;">Media URL from the Web</label>
+                    <input type="url" id="modal-img-url" placeholder="https://example.com/photo.jpg or video.mp4" style="width: 100%; border: 1px solid #f0e7e7; padding: 10px 14px; border-radius: 12px; font-family: 'Fredoka', sans-serif; font-size: 0.95rem; color: #564a4a; outline: none; background: #faf8f5;">
                 </div>
                 
                 <div>
@@ -109,8 +109,9 @@
     ];
 
     let currentSongIndex = 0;
-    let savedVolumeSetting = 0.4; // Cache for mute/unmute recall values
-    let isFadingOut = false; // Prevents overlapping fade loops
+    let savedVolumeSetting = 0.4; 
+    let isFadingOut = false; 
+    let globalSupabaseClient = null;
 
     function loadSong(index) {
         mainTrack.src = playlist[index];
@@ -123,7 +124,7 @@
         audioWidget.classList.add('show');
 
         loadSong(currentSongIndex);
-        mainTrack.volume = 0; // Start at zero so we can fade in smoothly!
+        mainTrack.volume = 0; 
         mainTrack.play()
             .then(() => fadeInTrack())
             .catch(err => console.log("Audio play blocked by browser: ", err));
@@ -138,13 +139,13 @@
 
         let fadeInInterval = setInterval(() => {
             if (currentVol < targetVolume) {
-                currentVol += 0.02; // Slowly steps the volume up
+                currentVol += 0.02; 
                 if (currentVol > targetVolume) currentVol = targetVolume;
                 mainTrack.volume = currentVol;
             } else {
                 clearInterval(fadeInInterval);
             }
-        }, 50); // Runs every 50 milliseconds for a fluid volume transition
+        }, 50); 
     }
 
     // 📉 SMOOTH FADE-OUT ENGINE
@@ -152,18 +153,16 @@
         if (mainTrack.duration && !isFadingOut && !mainTrack.muted) {
             let timeRemaining = mainTrack.duration - mainTrack.currentTime;
 
-            // Trigger fade out when only 4 seconds remain on the track
             if (timeRemaining <= 4) {
                 isFadingOut = true;
                 let currentVol = mainTrack.volume;
 
                 let fadeOutInterval = setInterval(() => {
                     if (currentVol > 0.02) {
-                        currentVol -= 0.02; // Gently slides the volume down
+                        currentVol -= 0.02; 
                         mainTrack.volume = currentVol;
                     } else {
                         clearInterval(fadeOutInterval);
-                        // Explicitly force the song to end once faded to absolute silence
                         mainTrack.currentTime = mainTrack.duration;
                     }
                 }, 40);
@@ -184,7 +183,6 @@
         }
     });
 
-    // Toggle mute when clicking the music note icon directly
     muteToggleBtn.addEventListener('click', () => {
         if (mainTrack.muted) {
             mainTrack.muted = false;
@@ -202,7 +200,7 @@
 
     // 🔄 PLAYLIST ENGINE LOOP TRACK MONITOR
     mainTrack.addEventListener('ended', () => {
-        isFadingOut = false; // Reset fade lock state flag
+        isFadingOut = false; 
         currentSongIndex++;
 
         if (currentSongIndex >= playlist.length) {
@@ -220,41 +218,64 @@
             .catch(err => console.log("Error rolling playlist loop: ", err));
     });
 
+    // Helper function to create cards with responsive video support + a delete button safely
+    function createPolaroidCard(id, url, captionText, isDynamic = false) {
+        const card = document.createElement('div');
+        card.className = 'polaroid-card';
+        // CRITICAL FIX: Explicit relative positioning so the child delete button attaches perfectly
+        card.style.position = 'relative'; 
+        card.style.display = 'inline-block';
+        
+        // Dynamic Check to see if url handles a movie file or static element
+        const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/) || url.includes('video');
+        const mediaTag = isVideo 
+            ? `<video src="${url}" muted loop playsinline style="width:100%; display:block; border-radius:8px;"></video>` 
+            : `<img src="${url}" alt="Memory" style="width:100%; display:block; border-radius:8px;">`;
+
+        let deleteButtonHTML = '';
+        if (isDynamic && id) {
+            // STYLING FIX: Adding highly explicit styles and hover transitions for the active delete layout element
+            deleteButtonHTML = `
+                <button class="delete-memory-btn" data-id="${id}" style="position: absolute; top: 12px; right: 12px; background: #ffffff; color: #ff7b93; border: 2px solid #ff7b93; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.15); z-index: 100; transition: all 0.2s ease;" onmouseover="this.style.background='#ff7b93'; this.style.color='#ffffff';" onmouseout="this.style.background='#ffffff'; this.style.color='#ff7b93';">❌</button>
+            `;
+        }
+
+        card.innerHTML = `
+            ${deleteButtonHTML}
+            ${mediaTag}
+            <span class="caption" style="display:block; margin-top:10px;">${captionText}</span>
+        `;
+        return card;
+    }
 
     // ==========================================================================
     // DYNAMIC SUPABASE & SCRAPBOOK ENTRY INTEGRATION
     // ==========================================================================
 
-    // Load the external Supabase package library directly into the window thread
     const supabaseScript = document.createElement('script');
     supabaseScript.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
     document.head.appendChild(supabaseScript);
 
     supabaseScript.onload = () => {
-        // Live custom credentials linked directly to your database account
         const SUPABASE_URL = "https://vfsclapyvzcghlbqpyrm.supabase.co"; 
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmc2NsYXB5dnpjZ2hsYnFweXJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NDAxNjgsImV4cCI6MjA5NzMxNjE2OH0.bDHefTz8QU0Scu-QMDRAKygMKdIG5ScUQhmKaSkFR2w";
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        globalSupabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Grab Modal Interface selectors
         const uploadModal = document.getElementById('upload-modal');
         const openUploadBtn = document.getElementById('open-upload-btn');
         const closeUploadBtn = document.getElementById('close-upload-btn');
         const uploadForm = document.getElementById('memory-upload-form');
         
-        // Mode switching elements
         const toggleFileBtn = document.getElementById('toggle-file-mode');
         const toggleUrlBtn = document.getElementById('toggle-url-mode');
         const fileWrapper = document.getElementById('file-input-wrapper');
         const urlWrapper = document.getElementById('url-input-wrapper');
         
-        let currentUploadType = 'file'; // Tracks 'file' or 'url' mode
+        let currentUploadType = 'file'; 
 
-        // UI View Toggles
         openUploadBtn.addEventListener('click', () => uploadModal.style.display = 'flex');
         closeUploadBtn.addEventListener('click', () => uploadModal.style.display = 'none');
 
-        // Form Mode Switching Logic
         toggleFileBtn.addEventListener('click', () => {
             currentUploadType = 'file';
             fileWrapper.style.display = 'block';
@@ -277,7 +298,6 @@
             toggleFileBtn.style.color = '#8e7f7f';
         });
 
-        // Intercept form submission handlers
         uploadForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('save-memory-btn');
@@ -293,57 +313,46 @@
                     const file = fileInput.files[0];
                     
                     if (!file) {
-                        alert('Please select an image file from storage first.');
+                        alert('Please select a file from storage first.');
                         submitBtn.innerText = "Save";
                         submitBtn.disabled = false;
                         return;
                     }
 
-                    // Create a unique name to prevent file name collisions in storage
                     const fileExt = file.name.split('.').pop();
                     const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
                     const filePath = `scraps/${fileName}`;
 
-                    // 1. Upload raw file straight into your Supabase Storage bucket
-                    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    const { data: uploadData, error: uploadError } = await globalSupabaseClient.storage
                         .from('photo-album')
                         .upload(filePath, file);
 
                     if (uploadError) throw uploadError;
 
-                    // 2. Fetch the newly created public web URL for that image
-                    const { data: publicUrlData } = supabaseClient.storage
+                    const { data: publicUrlData } = globalSupabaseClient.storage
                         .from('photo-album')
                         .getPublicUrl(filePath);
 
                     finalImageUrl = publicUrlData.publicUrl;
 
                 } else {
-                    // Grab pasted internet address string if in URL mode
                     finalImageUrl = document.getElementById('modal-img-url').value;
                 }
 
-                // 3. Save the active URL image path and text caption straight into table rows
-                const { error: dbError } = await supabaseClient
+                const { data: insertedData, error: dbError } = await globalSupabaseClient
                     .from('photos')
-                    .insert([{ image_url: finalImageUrl, description: description }]);
+                    .insert([{ image_url: finalImageUrl, description: description }])
+                    .select();
 
                 if (dbError) throw dbError;
 
-                // Generate card inside the UI right away using your polaroid-card styles
-                const card = document.createElement('div');
-                card.className = 'polaroid-card';
-                card.innerHTML = `
-                    <img src="${finalImageUrl}" alt="Memory">
-                    <span class="caption">${description}</span>
-                `;
-                
+                const newRecord = insertedData[0];
+                const card = createPolaroidCard(newRecord.id, finalImageUrl, description, true);
                 canvas.appendChild(card);
                 
-                // Cleanup and close
                 uploadForm.reset();
                 uploadModal.style.display = 'none';
-                alert('Added to your memory scrapbook! ✨');
+                alert('Added to your scrapbook! ✨');
 
             } catch (err) {
                 console.error(err);
@@ -354,19 +363,15 @@
             }
         });
 
-        // Fire the async data stream fetch loop
-        loadGalleryFeeds(supabaseClient);
+        loadGalleryFeeds(globalSupabaseClient);
     };
 
-    // 2. Load Gallery View from memories.html & Supabase Cloud records
     async function loadGalleryFeeds(supabaseClient) {
         try {
-            // Step A: Load your traditional hardcoded static local file cards
             const response = await fetch('memories.html');
             const originalHTML = await response.text();
             canvas.innerHTML = originalHTML;
 
-            // Step B: Fetch new assets added via the web dashboard from Supabase
             if (supabaseClient) {
                 const { data: databasePhotos, error } = await supabaseClient
                     .from('photos')
@@ -375,32 +380,58 @@
 
                 if (databasePhotos) {
                     databasePhotos.forEach(photo => {
-                        const card = document.createElement('div');
-                        card.className = 'polaroid-card';
-                        card.innerHTML = `
-                            <img src="${photo.image_url}" alt="Memory">
-                            <span class="caption">${photo.description}</span>
-                        `;
+                        const card = createPolaroidCard(photo.id, photo.image_url, photo.description, true);
                         canvas.appendChild(card);
                     });
                 }
             }
 
-            // Initialize Lightbox click events over all static + dynamic items
             setupLightboxListeners();
+            setupDeleteListeners();
 
         } catch (error) {
             console.error('Error pipeline sync failed for memories layout canvas:', error);
         }
     }
 
-    // 3. Lightbox Interactive Click Observers
+    // 🗑️ GLOBAL DELETE INTERACTION ENGINE
+    function setupDeleteListeners() {
+        document.getElementById('album-canvas').removeEventListener('click', handleDeleteClick);
+        document.getElementById('album-canvas').addEventListener('click', handleDeleteClick);
+    }
+
+    async function handleDeleteClick(e) {
+        if (e.target.classList.contains('delete-memory-btn')) {
+            e.stopPropagation(); 
+            
+            const recordId = e.target.getAttribute('data-id');
+            const userConfirmed = confirm("Are you sure you want to delete this memory forever?");
+            
+            if (userConfirmed && globalSupabaseClient) {
+                try {
+                    const { error } = await globalSupabaseClient
+                        .from('photos')
+                        .delete()
+                        .eq('id', recordId);
+
+                    if (error) throw error;
+
+                    e.target.closest('.polaroid-card').remove();
+                    alert('Memory deleted successfully! 👋');
+                } catch (err) {
+                    alert('Could not delete memory: ' + err.message);
+                }
+            }
+        }
+    }
+
     function setupLightboxListeners() {
-        // Clear older event attachments by replacing listeners safely via container observer clone
         canvas.replaceWith(canvas.cloneNode(true));
         const activeCanvas = document.getElementById('album-canvas');
 
         activeCanvas.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-memory-btn')) return;
+
             if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
                 lightboxContent.innerHTML = '';
                 const clone = e.target.cloneNode(true);
@@ -411,7 +442,6 @@
                     clone.autoplay = true;
                     clone.loop = true;
 
-                    // Instantly dip background playlist volume when viewing videos
                     if (!isFadingOut) mainTrack.volume = volumeSlider.value * 0.1;
                 }
 
@@ -419,15 +449,14 @@
                 lightbox.classList.add('active');
             }
         });
+        
+        setupDeleteListeners();
     }
 
-    // 4. Close Lightbox on backdrop click
     lightbox.addEventListener('click', (e) => {
         if (e.target === lightbox || e.target === lightboxContent) {
             lightbox.classList.remove('active');
             lightboxContent.innerHTML = '';
-
-            // Restore background track volume setting smoothly
             if (!isFadingOut) mainTrack.volume = mainTrack.muted ? 0 : volumeSlider.value;
         }
     });
