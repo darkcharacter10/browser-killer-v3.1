@@ -6,6 +6,43 @@
     <title>Our Sweet Memories</title>
 
     <link rel="stylesheet" href="style.css">
+
+    <style>
+        .polaroid-card {
+            position: relative !important;
+            display: inline-block !important;
+        }
+
+        .delete-memory-btn {
+            position: absolute !important;
+            top: 15px !important;
+            right: 15px !important;
+            background: #ffffff !important;
+            color: #ff7b93 !important;
+            border: 2px solid #ff7b93 !important;
+            width: 32px !important;
+            height: 32px !important;
+            border-radius: 50% !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 0.85rem !important;
+            font-weight: bold !important;
+            box-shadow: 0 4px 10px rgba(255, 123, 147, 0.3) !important;
+            z-index: 2000 !important; /* Forces the button to stay on top of the media */
+            transition: all 0.2s ease-in-out !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+        }
+
+        .delete-memory-btn:hover {
+            background: #ff7b93 !important;
+            color: #ffffff !important;
+            transform: scale(1.15) rotate(90deg) !important;
+            box-shadow: 0 6px 14px rgba(255, 123, 147, 0.45) !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -97,11 +134,9 @@
     const mainTrack = document.getElementById('widget-player');
     const audioWidget = document.getElementById('audio-widget');
 
-    // Volume controls elements
     const volumeSlider = document.getElementById('custom-volume-bar');
     const muteToggleBtn = document.getElementById('mute-toggle-btn');
 
-    // 🎵 TRACK PLAYLIST ARRAY
     const playlist = [
         'song1.mp3',
         'song2.mp3',
@@ -118,7 +153,6 @@
         mainTrack.load();
     }
 
-    // 1. Cover Screen Unroll Trigger Handler
     openBtn.addEventListener('click', () => {
         coverPage.classList.add('vanish');
         audioWidget.classList.add('show');
@@ -130,7 +164,6 @@
             .catch(err => console.log("Audio play blocked by browser: ", err));
     });
 
-    // 🔊 SMOOTH FADE-IN ENGINE
     function fadeInTrack() {
         if (mainTrack.muted) return;
         let targetVolume = parseFloat(volumeSlider.value);
@@ -148,7 +181,6 @@
         }, 50); 
     }
 
-    // 📉 SMOOTH FADE-OUT ENGINE
     mainTrack.addEventListener('timeupdate', () => {
         if (mainTrack.duration && !isFadingOut && !mainTrack.muted) {
             let timeRemaining = mainTrack.duration - mainTrack.currentTime;
@@ -170,7 +202,6 @@
         }
     });
 
-    // 🎛️ CUSTOM AUDIO SLIDER CONTROLLER CONNECTORS
     volumeSlider.addEventListener('input', (e) => {
         if (!isFadingOut) {
             mainTrack.volume = e.target.value;
@@ -198,7 +229,6 @@
         }
     });
 
-    // 🔄 PLAYLIST ENGINE LOOP TRACK MONITOR
     mainTrack.addEventListener('ended', () => {
         isFadingOut = false; 
         currentSongIndex++;
@@ -218,15 +248,10 @@
             .catch(err => console.log("Error rolling playlist loop: ", err));
     });
 
-    // Helper function to create cards with responsive video support + a delete button safely
     function createPolaroidCard(id, url, captionText, isDynamic = false) {
         const card = document.createElement('div');
         card.className = 'polaroid-card';
-        // CRITICAL FIX: Explicit relative positioning so the child delete button attaches perfectly
-        card.style.position = 'relative'; 
-        card.style.display = 'inline-block';
         
-        // Dynamic Check to see if url handles a movie file or static element
         const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/) || url.includes('video');
         const mediaTag = isVideo 
             ? `<video src="${url}" muted loop playsinline style="width:100%; display:block; border-radius:8px;"></video>` 
@@ -234,9 +259,9 @@
 
         let deleteButtonHTML = '';
         if (isDynamic && id) {
-            // STYLING FIX: Adding highly explicit styles and hover transitions for the active delete layout element
+            // High-priority inline styles to force visibility over any image/video elements
             deleteButtonHTML = `
-                <button class="delete-memory-btn" data-id="${id}" style="position: absolute; top: 12px; right: 12px; background: #ffffff; color: #ff7b93; border: 2px solid #ff7b93; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; box-shadow: 0 4px 8px rgba(0,0,0,0.15); z-index: 100; transition: all 0.2s ease;" onmouseover="this.style.background='#ff7b93'; this.style.color='#ffffff';" onmouseout="this.style.background='#ffffff'; this.style.color='#ff7b93';">❌</button>
+                <button class="delete-memory-btn" data-id="${id}">❌</button>
             `;
         }
 
@@ -394,7 +419,6 @@
         }
     }
 
-    // 🗑️ GLOBAL DELETE INTERACTION ENGINE
     function setupDeleteListeners() {
         document.getElementById('album-canvas').removeEventListener('click', handleDeleteClick);
         document.getElementById('album-canvas').addEventListener('click', handleDeleteClick);
