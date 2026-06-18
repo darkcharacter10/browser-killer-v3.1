@@ -1,0 +1,425 @@
+/* ==========================================================================
+   1. GENERAL RESET & BACKGROUND ENGINE
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #fbf7f0; /* Soft, warm cozy cream canvas */
+    font-family: 'Fredoka', sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px;
+    color: #564a4a;
+    position: relative;
+    overflow-x: hidden;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 60px;
+    position: relative;
+    z-index: 2;
+}
+
+h1 {
+    font-family: 'Caveat', cursive;
+    font-size: 3.5rem;
+    color: #ff7b93; /* Sweet pastel coral pink */
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
+}
+
+p.subtitle {
+    font-size: 1.1rem;
+    color: #8e7f7f;
+}
+
+/* ==========================================================================
+   2. INTRO COVER PAGE SCREEN LAYOUT (BUG-FREE RESPONSIVE FIXES)
+   ========================================================================== */
+.cover-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #fbf7f0; 
+    z-index: 2000; /* Stays completely on top of everything on first load */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Smooth curtain slide-up reveal when clicked */
+    transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1), opacity 0.8s ease;
+}
+
+/* The envelope-style interactive card */
+.cover-card {
+    background: #ffffff;
+    padding: 35px 25px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(255, 123, 147, 0.12);
+    border: 1px solid rgba(255, 123, 147, 0.15);
+    
+    max-width: 420px;
+    width: 90%;
+    max-height: 90vh; /* Prevents the card from stretching past the screen height */
+    
+    /* Flexbox grouping keeps header, text, and button packed nicely together */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto; /* Fallback inner scrollbar for extremely short mobile screens */
+    
+    /* Pop-in entry animation on initial page load */
+    animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    transition: transform 0.5s cubic-bezier(0.6, -0.28, 0.735, 0.045), opacity 0.4s ease;
+}
+
+/* Card Entry Animation Keyframes */
+@keyframes popIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(30px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.cover-card h2 {
+    font-family: 'Caveat', cursive;
+    font-size: 2.8rem;
+    color: #ff7b93;
+    margin-bottom: 12px;
+}
+
+.cover-card p {
+    font-size: 1rem;
+    color: #8e7f7f;
+    margin-bottom: 24px;
+    line-height: 1.4;
+    text-align: center;
+}
+
+/* The interactive pulsing entry button */
+.open-btn {
+    font-family: 'Fredoka', sans-serif;
+    background-color: #ff7b93;
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    font-size: 1.1rem;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(255, 123, 147, 0.3);
+    transition: all 0.3s ease;
+    animation: pulse 2s infinite;
+    flex-shrink: 0; /* Guarantees the button will never distort or compress */
+}
+
+.open-btn:hover {
+    background-color: #ff5271;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(255, 123, 147, 0.4);
+}
+
+/* Pulsing heartbeat keyframes */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.04); box-shadow: 0 5px 20px rgba(255, 123, 147, 0.5); }
+    100% { transform: scale(1); }
+}
+
+/* Exit Transition Actions: Shrinks card and slides background away */
+.cover-screen.vanish {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-100%); 
+}
+
+.cover-screen.vanish .cover-card {
+    opacity: 0;
+    transform: scale(0.7); 
+}
+
+/* ==========================================================================
+   3. FLOATING MUSIC PLAYER CONTROLS (CUSTOM CLEAN ENGINE - FIX)
+   ========================================================================== */
+.audio-controls {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: #ffffff;
+    padding: 8px 14px;
+    border-radius: 40px; 
+    box-shadow: 0 10px 25px rgba(255, 123, 147, 0.15); 
+    z-index: 100; 
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 2px dashed rgba(255, 182, 193, 0.6); 
+    opacity: 0;
+    transform: translateY(20px);
+    
+    /* Auto-Hide: Collapses to just the music icon */
+    max-width: 50px; 
+    overflow: hidden;
+    white-space: nowrap;
+    transition: max-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+}
+
+.audio-controls.show {
+    opacity: 0.8;
+    transform: translateY(0);
+}
+
+/* Hover effect unrolls to reveal our clean slider */
+.audio-controls.show:hover {
+    max-width: 180px; 
+    opacity: 1;
+}
+
+.music-icon {
+    font-size: 1.3rem;
+    animation: bounceMusic 2s infinite ease-in-out;
+    cursor: pointer;
+    user-select: none;
+}
+
+@keyframes bounceMusic {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-4px) rotate(12deg); }
+}
+
+/* Custom Cute Slider Interface (Replaces the broken browser audio widget) */
+.volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 90px;
+    height: 6px;
+    background: #fff0f2; /* Soft pink track background */
+    border-radius: 50px;
+    outline: none;
+    cursor: pointer;
+}
+
+/* Styling the cute dragging circular circle handle */
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ff7b93; /* Bright warm coral pink */
+    transition: transform 0.1s ease;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: #ff5271;
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ff7b93;
+    border: none;
+    cursor: pointer;
+}
+/* ==========================================================================
+   4. FLOATING HEARTS BACKGROUND AMBIENCE
+   ========================================================================== */
+.hearts-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; 
+    pointer-events: none; /* Clicking drops straight through the hearts */
+}
+
+.heart {
+    position: absolute;
+    bottom: -50px;
+    background-color: rgba(255, 123, 147, 0.18); 
+    display: inline-block;
+    height: 20px;
+    width: 20px;
+    transform: rotate(-45deg);
+    animation: floatUp 12s linear infinite;
+}
+
+.heart::before, .heart::after {
+    content: "";
+    background-color: inherit;
+    border-radius: 50%;
+    position: absolute;
+    width: 20px;
+    height: 20px;
+}
+
+.heart::before { top: -10px; left: 0; }
+.heart::after { left: 10px; top: 0; }
+
+/* Distributing dynamic delay patterns, sizes, and alignment points across elements */
+.heart:nth-child(1) { left: 10%; width: 15px; height: 15px; animation-duration: 10s; animation-delay: 0s; }
+.heart:nth-child(2) { left: 25%; width: 25px; height: 25px; animation-duration: 15s; animation-delay: 2s; }
+.heart:nth-child(3) { left: 45%; width: 18px; height: 18px; animation-duration: 12s; animation-delay: 5s; }
+.heart:nth-child(4) { left: 65%; width: 22px; height: 22px; animation-duration: 14s; animation-delay: 1s; }
+.heart:nth-child(5) { left: 85%; width: 14px; height: 14px; animation-duration: 9s; animation-delay: 4s; }
+
+@keyframes floatUp {
+    0% { bottom: -50px; transform: translateX(0) rotate(-45deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { bottom: 105%; transform: translateX(80px) rotate(-20deg); opacity: 0; }
+}
+
+/* ==========================================================================
+   5. SCRAPBOOK COLLAGE GRID & POLAROID CARDS
+   ========================================================================== */
+.scrapbook-container {
+    position: relative;
+    z-index: 2; 
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    /* Auto-fit configuration continuously scales rows as new content expands */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 50px 40px;
+    padding: 20px;
+    margin-bottom: 50px;
+}
+
+/* The Polaroid Frame */
+.polaroid-card {
+    background: #ffffff;
+    padding: 16px 16px 24px 16px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    position: relative;
+    text-align: center;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(0,0,0,0.02);
+}
+
+.polaroid-card img, 
+.polaroid-card video {
+    width: 100%;
+    height: 250px;
+    object-fit: cover; /* Crops media gracefully into clean squares */
+    border: 1px solid #f0f0f0;
+    display: block;
+    background-color: #fafafa; 
+    cursor: pointer;
+}
+
+.caption {
+    font-family: 'Caveat', cursive;
+    font-size: 1.8rem;
+    color: #4a3f3f;
+    margin-top: 15px;
+    display: block;
+    line-height: 1.2;
+}
+
+/* Washi Tape Decorative Elements */
+.polaroid-card::before {
+    content: "";
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 95px;
+    height: 25px;
+    background-color: rgba(255, 182, 193, 0.55); 
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.01);
+    clip-path: polygon(0% 10%, 5% 0%, 95% 0%, 100% 15%, 98% 90%, 92% 100%, 8% 100%, 2% 85%);
+    z-index: 3; 
+}
+
+/* Organizing layout variance using natural alternating tilts */
+.scrapbook-container .polaroid-card:nth-child(odd) { transform: rotate(-3deg); }
+.scrapbook-container .polaroid-card:nth-child(even) { transform: rotate(3deg); }
+.scrapbook-container .polaroid-card:nth-child(3n) { transform: rotate(-1.5deg) translateY(5px); }
+
+.scrapbook-container .polaroid-card:nth-child(even)::before { background-color: rgba(176, 224, 230, 0.65); }
+.scrapbook-container .polaroid-card:nth-child(3n)::before { background-color: rgba(255, 239, 161, 0.65); }
+
+/* Interactive Hover Animations */
+.polaroid-card:hover {
+    transform: scale(1.06) rotate(0deg) !important;
+    box-shadow: 0 15px 30px rgba(255, 123, 147, 0.18);
+    z-index: 10;
+}
+
+.polaroid-card:hover .caption { color: #ff7b93; }
+
+/* ==========================================================================
+   6. LIGHTBOX EXPANDED POPUP LAYOUT
+   ========================================================================== */
+.lightbox-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(43, 36, 36, 0.9); /* Warm dimmed filter */
+    z-index: 1000; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.lightbox-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.lightbox-overlay img,
+.lightbox-overlay video {
+    max-width: 90%;
+    max-height: 80vh;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    background-color: #000;
+    transform: scale(0.9);
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+}
+
+.lightbox-overlay.active img,
+.lightbox-overlay.active video {
+    transform: scale(1);
+}
+
+/* ==========================================================================
+   7. FOOTER LABELS
+   ========================================================================== */
+footer {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    margin-top: 40px;
+    font-size: 1.1rem;
+    color: #a39595;
+}
+
+.heart-counter {
+    background: #ffffff;
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 30px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+    font-size: 0.95rem;
+    color: #ff7b93;
+    border: 1px dashed rgba(255, 123, 147, 0.3);
+}

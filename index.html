@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Sweet Memories</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="cover-screen" id="cover-page">
+        <div class="cover-card">
+            <h2>Hey Babe! 👋</h2>
+            <p>A Little Gift From me!</p>
+            <button class="open-btn" id="open-book-btn">Open 💖</button>
+        </div>
+    </div>
+
+    <div class="audio-controls" id="audio-widget">
+        <span class="music-icon" id="mute-toggle-btn">🎵</span>
+        <input type="range" class="volume-slider" id="custom-volume-bar" min="0" max="1" step="0.05" value="0.4">
+
+        <audio id="widget-player"></audio>
+    </div>
+
+    <div class="hearts-bg">
+        <div class="heart"></div>
+        <div class="heart"></div>
+        <div class="heart"></div>
+        <div class="heart"></div>
+        <div class="heart"></div>
+    </div>
+
+    <header>
+        <h1>You Asked Why....!</h1>
+        <p class="subtitle">Here's The Answer ✨</p>
+    </header>
+
+    <div style="text-align: center; margin: -20px 0 40px 0; position: relative; z-index: 10;">
+        <button id="open-upload-btn" class="open-btn" style="animation: pulse 2s infinite; font-size: 1rem; padding: 10px 24px;">
+            ✨ Add New Memory
+        </button>
+    </div>
+
+    <div id="upload-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(43, 36, 36, 0.6); backdrop-filter: blur(4px); z-index: 3000; align-items: center; justify-content: center; padding: 20px;">
+        <div style="background: #ffffff; border-radius: 20px; width: 100%; max-width: 400px; padding: 30px; box-shadow: 0 15px 35px rgba(255, 123, 147, 0.2); border: 1px solid rgba(255, 123, 147, 0.15); text-align: center;">
+            <h3 style="font-family: 'Caveat', cursive; font-size: 2.4rem; color: #ff7b93; margin-bottom: 15px;">Capture a New Moment</h3>
+            
+            <form id="memory-upload-form" style="display: flex; flex-direction: column; gap: 15px; text-align: left;">
+                <div style="display: flex; gap: 10px; background: #faf8f5; padding: 4px; border-radius: 10px; border: 1px solid #f0e7e7;">
+                    <button type="button" id="toggle-file-mode" style="flex: 1; border: none; padding: 6px; border-radius: 8px; cursor: pointer; font-family: 'Fredoka', sans-serif; font-size: 0.85rem; font-weight: bold; background: #ff7b93; color: white;">Device Storage</button>
+                    <button type="button" id="toggle-url-mode" style="flex: 1; border: none; padding: 6px; border-radius: 8px; cursor: pointer; font-family: 'Fredoka', sans-serif; font-size: 0.85rem; font-weight: bold; background: transparent; color: #8e7f7f;">Web URL</button>
+                </div>
+
+                <div id="file-input-wrapper">
+                    <label style="display: block; font-size: 0.9rem; color: #8e7f7f; margin-bottom: 5px;">Choose photo from storage</label>
+                    <input type="file" id="modal-img-file" accept="image/*" style="width: 100%; border: 1px dashed #ffb6c1; padding: 12px; border-radius: 12px; font-family: 'Fredoka', sans-serif; font-size: 0.9rem; color: #564a4a; background: #fffdfb; cursor: pointer;">
+                </div>
+
+                <div id="url-input-wrapper" style="display: none;">
+                    <label style="display: block; font-size: 0.9rem; color: #8e7f7f; margin-bottom: 5px;">Image URL from the Web</label>
+                    <input type="url" id="modal-img-url" placeholder="https://example.com/photo.jpg" style="width: 100%; border: 1px solid #f0e7e7; padding: 10px 14px; border-radius: 12px; font-family: 'Fredoka', sans-serif; font-size: 0.95rem; color: #564a4a; outline: none; background: #faf8f5;">
+                </div>
+                
+                <div>
+                    <label style="display: block; font-size: 0.9rem; color: #8e7f7f; margin-bottom: 5px;">What would you like to write below it?</label>
+                    <textarea id="modal-img-desc" rows="3" placeholder="Write your sweet caption..." required style="width: 100%; border: 1px solid #f0e7e7; padding: 10px 14px; border-radius: 12px; font-family: 'Fredoka', sans-serif; font-size: 0.95rem; color: #564a4a; outline: none; background: #faf8f5; resize: none;"></textarea>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 10px;">
+                    <button type="button" id="close-upload-btn" style="flex: 1; border: 1px solid #ffb6c1; background: #fff8f9; color: #ff7b93; padding: 12px; border-radius: 30px; cursor: pointer; font-family: 'Fredoka', sans-serif; font-weight: bold; transition: 0.2s;">Cancel</button>
+                    <button type="submit" id="save-memory-btn" style="flex: 1; background: #ff7b93; color: white; border: none; padding: 12px; border-radius: 30px; cursor: pointer; font-family: 'Fredoka', sans-serif; font-weight: bold; box-shadow: 0 4px 10px rgba(255, 123, 147, 0.2); transition: 0.2s;">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <main class="scrapbook-container" id="album-canvas"></main>
+
+    <div class="lightbox-overlay" id="lightbox">
+        <div id="lightbox-content"></div>
+    </div>
+
+    <footer>
+        <div class="heart-counter">
+            Made with 💖
+        </div>
+    </footer>
+
+    <script>
+    const canvas = document.getElementById('album-canvas');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxContent = document.getElementById('lightbox-content');
+    const coverPage = document.getElementById('cover-page');
+    const openBtn = document.getElementById('open-book-btn');
+    const mainTrack = document.getElementById('widget-player');
+    const audioWidget = document.getElementById('audio-widget');
+
+    // Volume controls elements
+    const volumeSlider = document.getElementById('custom-volume-bar');
+    const muteToggleBtn = document.getElementById('mute-toggle-btn');
+
+    // 🎵 TRACK PLAYLIST ARRAY
+    const playlist = [
+        'song1.mp3',
+        'song2.mp3',
+        'song3.mp3'
+    ];
+
+    let currentSongIndex = 0;
+    let savedVolumeSetting = 0.4; // Cache for mute/unmute recall values
+    let isFadingOut = false; // Prevents overlapping fade loops
+
+    function loadSong(index) {
+        mainTrack.src = playlist[index];
+        mainTrack.load();
+    }
+
+    // 1. Cover Screen Unroll Trigger Handler
+    openBtn.addEventListener('click', () => {
+        coverPage.classList.add('vanish');
+        audioWidget.classList.add('show');
+
+        loadSong(currentSongIndex);
+        mainTrack.volume = 0; // Start at zero so we can fade in smoothly!
+        mainTrack.play()
+            .then(() => fadeInTrack())
+            .catch(err => console.log("Audio play blocked by browser: ", err));
+    });
+
+    // 🔊 SMOOTH FADE-IN ENGINE
+    function fadeInTrack() {
+        if (mainTrack.muted) return;
+        let targetVolume = parseFloat(volumeSlider.value);
+        let currentVol = 0;
+        mainTrack.volume = 0;
+
+        let fadeInInterval = setInterval(() => {
+            if (currentVol < targetVolume) {
+                currentVol += 0.02; // Slowly steps the volume up
+                if (currentVol > targetVolume) currentVol = targetVolume;
+                mainTrack.volume = currentVol;
+            } else {
+                clearInterval(fadeInInterval);
+            }
+        }, 50); // Runs every 50 milliseconds for a fluid volume transition
+    }
+
+    // 📉 SMOOTH FADE-OUT ENGINE
+    mainTrack.addEventListener('timeupdate', () => {
+        if (mainTrack.duration && !isFadingOut && !mainTrack.muted) {
+            let timeRemaining = mainTrack.duration - mainTrack.currentTime;
+
+            // Trigger fade out when only 4 seconds remain on the track
+            if (timeRemaining <= 4) {
+                isFadingOut = true;
+                let currentVol = mainTrack.volume;
+
+                let fadeOutInterval = setInterval(() => {
+                    if (currentVol > 0.02) {
+                        currentVol -= 0.02; // Gently slides the volume down
+                        mainTrack.volume = currentVol;
+                    } else {
+                        clearInterval(fadeOutInterval);
+                        // Explicitly force the song to end once faded to absolute silence
+                        mainTrack.currentTime = mainTrack.duration;
+                    }
+                }, 40);
+            }
+        }
+    });
+
+    // 🎛️ CUSTOM AUDIO SLIDER CONTROLLER CONNECTORS
+    volumeSlider.addEventListener('input', (e) => {
+        if (!isFadingOut) {
+            mainTrack.volume = e.target.value;
+        }
+        if (e.target.value > 0) {
+            mainTrack.muted = false;
+            muteToggleBtn.textContent = '🎵';
+        } else {
+            muteToggleBtn.textContent = '❌';
+        }
+    });
+
+    // Toggle mute when clicking the music note icon directly
+    muteToggleBtn.addEventListener('click', () => {
+        if (mainTrack.muted) {
+            mainTrack.muted = false;
+            volumeSlider.value = savedVolumeSetting;
+            fadeInTrack();
+            muteToggleBtn.textContent = '🎵';
+        } else {
+            savedVolumeSetting = volumeSlider.value > 0 ? volumeSlider.value : 0.4;
+            mainTrack.muted = true;
+            volumeSlider.value = 0;
+            mainTrack.volume = 0;
+            muteToggleBtn.textContent = '❌';
+        }
+    });
+
+    // 🔄 PLAYLIST ENGINE LOOP TRACK MONITOR
+    mainTrack.addEventListener('ended', () => {
+        isFadingOut = false; // Reset fade lock state flag
+        currentSongIndex++;
+
+        if (currentSongIndex >= playlist.length) {
+            currentSongIndex = 0;
+        }
+
+        loadSong(currentSongIndex);
+
+        if (mainTrack.muted) {
+            mainTrack.volume = 0;
+        }
+
+        mainTrack.play()
+            .then(() => fadeInTrack())
+            .catch(err => console.log("Error rolling playlist loop: ", err));
+    });
+
+
+    // ==========================================================================
+    // DYNAMIC SUPABASE & SCRAPBOOK ENTRY INTEGRATION
+    // ==========================================================================
+
+    // Load the external Supabase package library directly into the window thread
+    const supabaseScript = document.createElement('script');
+    supabaseScript.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+    document.head.appendChild(supabaseScript);
+
+    supabaseScript.onload = () => {
+        // Live custom credentials linked directly to your database account
+        const SUPABASE_URL = "https://vfsclapyvzcghlbqpyrm.supabase.co"; 
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZmc2NsYXB5dnpjZ2hsYnFweXJtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NDAxNjgsImV4cCI6MjA5NzMxNjE2OH0.bDHefTz8QU0Scu-QMDRAKygMKdIG5ScUQhmKaSkFR2w";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Grab Modal Interface selectors
+        const uploadModal = document.getElementById('upload-modal');
+        const openUploadBtn = document.getElementById('open-upload-btn');
+        const closeUploadBtn = document.getElementById('close-upload-btn');
+        const uploadForm = document.getElementById('memory-upload-form');
+        
+        // Mode switching elements
+        const toggleFileBtn = document.getElementById('toggle-file-mode');
+        const toggleUrlBtn = document.getElementById('toggle-url-mode');
+        const fileWrapper = document.getElementById('file-input-wrapper');
+        const urlWrapper = document.getElementById('url-input-wrapper');
+        
+        let currentUploadType = 'file'; // Tracks 'file' or 'url' mode
+
+        // UI View Toggles
+        openUploadBtn.addEventListener('click', () => uploadModal.style.display = 'flex');
+        closeUploadBtn.addEventListener('click', () => uploadModal.style.display = 'none');
+
+        // Form Mode Switching Logic
+        toggleFileBtn.addEventListener('click', () => {
+            currentUploadType = 'file';
+            fileWrapper.style.display = 'block';
+            urlWrapper.style.display = 'none';
+            document.getElementById('modal-img-url').removeAttribute('required');
+            toggleFileBtn.style.background = '#ff7b93';
+            toggleFileBtn.style.color = 'white';
+            toggleUrlBtn.style.background = 'transparent';
+            toggleUrlBtn.style.color = '#8e7f7f';
+        });
+
+        toggleUrlBtn.addEventListener('click', () => {
+            currentUploadType = 'url';
+            fileWrapper.style.display = 'none';
+            urlWrapper.style.display = 'block';
+            document.getElementById('modal-img-url').setAttribute('required', 'true');
+            toggleUrlBtn.style.background = '#ff7b93';
+            toggleUrlBtn.style.color = 'white';
+            toggleFileBtn.style.background = 'transparent';
+            toggleFileBtn.style.color = '#8e7f7f';
+        });
+
+        // Intercept form submission handlers
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('save-memory-btn');
+            submitBtn.innerText = "Saving...";
+            submitBtn.disabled = true;
+
+            const description = document.getElementById('modal-img-desc').value;
+            let finalImageUrl = '';
+
+            try {
+                if (currentUploadType === 'file') {
+                    const fileInput = document.getElementById('modal-img-file');
+                    const file = fileInput.files[0];
+                    
+                    if (!file) {
+                        alert('Please select an image file from storage first.');
+                        submitBtn.innerText = "Save";
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
+                    // Create a unique name to prevent file name collisions in storage
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+                    const filePath = `scraps/${fileName}`;
+
+                    // 1. Upload raw file straight into your Supabase Storage bucket
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                        .from('photo-album')
+                        .upload(filePath, file);
+
+                    if (uploadError) throw uploadError;
+
+                    // 2. Fetch the newly created public web URL for that image
+                    const { data: publicUrlData } = supabaseClient.storage
+                        .from('photo-album')
+                        .getPublicUrl(filePath);
+
+                    finalImageUrl = publicUrlData.publicUrl;
+
+                } else {
+                    // Grab pasted internet address string if in URL mode
+                    finalImageUrl = document.getElementById('modal-img-url').value;
+                }
+
+                // 3. Save the active URL image path and text caption straight into table rows
+                const { error: dbError } = await supabaseClient
+                    .from('photos')
+                    .insert([{ image_url: finalImageUrl, description: description }]);
+
+                if (dbError) throw dbError;
+
+                // Generate card inside the UI right away using your polaroid-card styles
+                const card = document.createElement('div');
+                card.className = 'polaroid-card';
+                card.innerHTML = `
+                    <img src="${finalImageUrl}" alt="Memory">
+                    <span class="caption">${description}</span>
+                `;
+                
+                canvas.appendChild(card);
+                
+                // Cleanup and close
+                uploadForm.reset();
+                uploadModal.style.display = 'none';
+                alert('Added to your memory scrapbook! ✨');
+
+            } catch (err) {
+                console.error(err);
+                alert('Upload error: ' + err.message);
+            } finally {
+                submitBtn.innerText = "Save";
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Fire the async data stream fetch loop
+        loadGalleryFeeds(supabaseClient);
+    };
+
+    // 2. Load Gallery View from memories.html & Supabase Cloud records
+    async function loadGalleryFeeds(supabaseClient) {
+        try {
+            // Step A: Load your traditional hardcoded static local file cards
+            const response = await fetch('memories.html');
+            const originalHTML = await response.text();
+            canvas.innerHTML = originalHTML;
+
+            // Step B: Fetch new assets added via the web dashboard from Supabase
+            if (supabaseClient) {
+                const { data: databasePhotos, error } = await supabaseClient
+                    .from('photos')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+
+                if (databasePhotos) {
+                    databasePhotos.forEach(photo => {
+                        const card = document.createElement('div');
+                        card.className = 'polaroid-card';
+                        card.innerHTML = `
+                            <img src="${photo.image_url}" alt="Memory">
+                            <span class="caption">${photo.description}</span>
+                        `;
+                        canvas.appendChild(card);
+                    });
+                }
+            }
+
+            // Initialize Lightbox click events over all static + dynamic items
+            setupLightboxListeners();
+
+        } catch (error) {
+            console.error('Error pipeline sync failed for memories layout canvas:', error);
+        }
+    }
+
+    // 3. Lightbox Interactive Click Observers
+    function setupLightboxListeners() {
+        // Clear older event attachments by replacing listeners safely via container observer clone
+        canvas.replaceWith(canvas.cloneNode(true));
+        const activeCanvas = document.getElementById('album-canvas');
+
+        activeCanvas.addEventListener('click', (e) => {
+            if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') {
+                lightboxContent.innerHTML = '';
+                const clone = e.target.cloneNode(true);
+
+                if (e.target.tagName === 'VIDEO') {
+                    clone.muted = false;
+                    clone.controls = true;
+                    clone.autoplay = true;
+                    clone.loop = true;
+
+                    // Instantly dip background playlist volume when viewing videos
+                    if (!isFadingOut) mainTrack.volume = volumeSlider.value * 0.1;
+                }
+
+                lightboxContent.appendChild(clone);
+                lightbox.classList.add('active');
+            }
+        });
+    }
+
+    // 4. Close Lightbox on backdrop click
+    lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox || e.target === lightboxContent) {
+            lightbox.classList.remove('active');
+            lightboxContent.innerHTML = '';
+
+            // Restore background track volume setting smoothly
+            if (!isFadingOut) mainTrack.volume = mainTrack.muted ? 0 : volumeSlider.value;
+        }
+    });
+    </script>
+</body>
+</html>
